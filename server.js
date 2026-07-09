@@ -11,7 +11,8 @@ const dataFile = path.join(dataDir, 'dashboard-data.json');
 
 const validUsers = {
   's.admin@gmail.com': 'sk12345',
-  'you@gmail.com': 'your-own-password'
+  's.user@gmail.com': 'user123'
+  'you@gmail.com': 'your-own-password',s
 };
 
 const initialData = {
@@ -23,6 +24,15 @@ const initialData = {
   sick: [
     { id: 'sick-1', name: 'Noah Brooks', date: '2026-07-08', days: 2, notes: 'Flu symptoms' },
     { id: 'sick-2', name: 'Ava Torres', date: '2026-07-09', days: 1, notes: 'Migraine' }
+  ],
+  users: [
+    {
+      id: 'user-1',
+      name: 'Mia Chen',
+      role: 'Lead SK',
+      totalSickLeave: 12,
+      usedSickLeave: 2
+    }
   ]
 };
 
@@ -54,7 +64,8 @@ function loadDashboardData() {
     const parsed = JSON.parse(raw);
     return {
       active: Array.isArray(parsed.active) ? parsed.active : initialData.active,
-      sick: Array.isArray(parsed.sick) ? parsed.sick : initialData.sick
+      sick: Array.isArray(parsed.sick) ? parsed.sick : initialData.sick,
+      users: Array.isArray(parsed.users) ? parsed.users : initialData.users
     };
   } catch (error) {
     return JSON.parse(JSON.stringify(initialData));
@@ -88,6 +99,10 @@ function serveStatic(req, res) {
 
   if (requestedPath === '/dashboard') {
     requestedPath = '/dashboard.html';
+  }
+
+  if (requestedPath === '/user-dashboard') {
+    requestedPath = '/user-dashboard.html';
   }
 
   const safePath = path.normalize(requestedPath).replace(/^\.+/, '');
@@ -134,9 +149,10 @@ const server = http.createServer(async (req, res) => {
       const password = (data.password || '').trim();
 
       if (validUsers[email] && validUsers[email] === password) {
+        const redirect = email === 'dummy.user@gmail.com' ? '/user-dashboard' : '/dashboard.html';
         sendJson(res, 200, {
           success: true,
-          redirect: '/dashboard.html',
+          redirect,
           message: `Welcome back, ${email.split('@')[0]}!`
         });
       } else {
@@ -150,6 +166,77 @@ const server = http.createServer(async (req, res) => {
         success: false,
         message: 'Invalid request payload.'
       });
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/api/user/dashboard') {
+    const user = dashboardData.users[0] || null;
+    const history = dashboardData.sick
+      .filter((entry) => entry.userId === user?.id)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    const usedSickLeave = history.reduce((sum, entry) => sum + (Number(entry.days) || 1), 0);
+    const availableSickLeave = user ? Math.max(0, (user.totalSickLeave || 0) - usedSickLeave) : 0;
+
+    sendJson(res, 200, {
+      success: true,
+      data: {
+        user: user ? { ...user, usedSickLeave, availableSickLeave } : null,
+        history
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/user/sick') {
+    try {
+      const body = await readBody(req);
+      const data = JSON.parse(body);
+      const userId = (data.userId || 'user-1').trim();
+      const user = dashboardData.users.find((person) => person.id === userId);
+
+      if (!user) {
+        sendJson(res, 404, { success: false, message: 'User not found.' });
+        return;
+      }
+
+      const requestedDays = Number(data.days) || 1;
+      const usedSickLeave = dashboardData.sick
+        .filter((entry) => entry.userId === user.id)
+        .reduce((sum, entry) => sum + (Number(entry.days) || 1), 0);
+      const availableSickLeave = Math.max(0, (user.totalSickLeave || 0) - usedSickLeave);
+
+      if (requestedDays > availableSickLeave) {
+        sendJson(res, 400, { success: false, message: 'You do not have enough sick leave days available.' });
+        return;
+      }
+
+      const entry = {
+        id: `sick-${Date.now()}`,
+        userId: user.id,
+        name: user.name,
+        date: (data.date || '').trim(),
+        days: requestedDays,
+        notes: (data.notes || '').trim()
+      };
+
+      dashboardData.sick.unshift(entry);
+      user.usedSickLeave = usedSickLeave + requestedDays;
+      saveDashboardData(dashboardData);
+
+      sendJson(res, 201, {
+        success: true,
+        data: {
+          user: {
+            ...user,
+            usedSickLeave: user.usedSickLeave,
+            availableSickLeave: Math.max(0, (user.totalSickLeave || 0) - user.usedSickLeave)
+          },
+          history: dashboardData.sick.filter((item) => item.userId === user.id)
+        }
+      });
+    } catch (error) {
+      sendJson(res, 400, { success: false, message: 'Unable to submit sick leave request.' });
     }
     return;
   }

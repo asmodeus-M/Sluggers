@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Leave Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      body {
+        overflow: auto;
+        background: linear-gradient(135deg, #050816, #0f172a 55%, #1d4ed8);
+      }
+
+      .dashboard-shell {
+        width: min(980px, 100%);
+        margin: 2rem auto;
+        padding: 1.5rem;
+        border-radius: 24px;
+        background: rgba(8, 12, 28, 0.82);
+        border: 1px solid rgba(255,255,255,0.14);
+        box-shadow: 0 20px 50px rgba(2, 6, 23, 0.45);
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        color: #7dd3fc;
+        font-size: 0.8rem;
+        margin: 0 0 0.25rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+      }
+
+      .subtitle {
+        margin: 0.3rem 0 0;
+        color: rgba(248,247,255,0.74);
+      }
+
+      .ghost-link {
+        color: #7dd3fc;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .balance-card, .panel {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 18px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .balance-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+      }
+
+      .balance-value {
+        display: block;
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-top: 0.2rem;
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 0.7rem;
+      }
+
+      input, textarea, button {
+        width: 100%;
+        padding: 0.75rem 0.8rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.16);
+        background: rgba(255,255,255,0.07);
+        color: #f8f7ff;
+      }
+
+      button {
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(90deg, #8b5cf6, #22d3ee);
+        font-weight: 700;
+      }
+
+      .card-list {
+        display: grid;
+        gap: 0.7rem;
+        margin-top: 0.8rem;
+      }
+
+      .card {
+        padding: 0.8rem 0.9rem;
+        border-radius: 14px;
+        background: rgba(4,8,24,0.5);
+        border: 1px solid rgba(255,255,255,0.08);
+      }
+
+      .status-message {
+        min-height: 1.2rem;
+        margin-top: 0.5rem;
+        color: #7dd3fc;
+      }
+
+      @media (max-width: 700px) {
+        .balance-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Leave Portal</p>
+          <h1>My sick leave dashboard</h1>
+          <p class="subtitle">Request sick leave and keep track of your remaining balance.</p>
+        </div>
+        <a class="ghost-link" href="/">← Back home</a>
+      </header>
+
+      <section class="balance-card">
+        <div class="balance-grid">
+          <div>
+            <span>Total annual sick leave</span>
+            <strong id="total-leave" class="balance-value">0</strong>
+          </div>
+          <div>
+            <span>Used</span>
+            <strong id="used-leave" class="balance-value">0</strong>
+          </div>
+          <div>
+            <span>Available</span>
+            <strong id="available-leave" class="balance-value">0</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Apply for sick leave</h2>
+        <form id="user-sick-form" class="form-grid">
+          <input id="leave-date" name="date" type="date" required />
+          <input id="leave-days" name="days" type="number" min="1" max="21" placeholder="Days off" required />
+          <textarea id="leave-notes" name="notes" rows="3" placeholder="Short note"></textarea>
+          <button type="submit">Submit request</button>
+        </form>
+        <p id="user-status" class="status-message"></p>
+      </section>
+
+      <section class="panel">
+        <h2>My leave history</h2>
+        <div id="leave-history" class="card-list"></div>
+      </section>
+    </div>
+
+    <script>
+      const totalLeaveEl = document.getElementById('total-leave');
+      const usedLeaveEl = document.getElementById('used-leave');
+      const availableLeaveEl = document.getElementById('available-leave');
+      const historyEl = document.getElementById('leave-history');
+      const statusEl = document.getElementById('user-status');
+      const form = document.getElementById('user-sick-form');
+
+      async function loadLeaveDashboard() {
+        try {
+          const response = await fetch('/api/user/dashboard');
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Unable to load leave dashboard.');
+          }
+
+          const user = result.data.user;
+          const history = result.data.history || [];
+
+          if (user) {
+            totalLeaveEl.textContent = user.totalSickLeave || 0;
+            usedLeaveEl.textContent = user.usedSickLeave || 0;
+            availableLeaveEl.textContent = user.availableSickLeave || 0;
+          }
+
+          historyEl.innerHTML = history.length
+            ? history.map((entry) => `
+              <article class="card">
+                <strong>${entry.date}</strong>
+                <p>${entry.days} day${entry.days > 1 ? 's' : ''} off</p>
+                <p>${entry.notes || 'No note provided.'}</p>
+              </article>
+            `).join('')
+            : '<p>No leave requests yet.</p>';
+        } catch (error) {
+          statusEl.textContent = error.message;
+        }
+      }
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        statusEl.textContent = 'Submitting...';
+
+        try {
+          const response = await fetch('/api/user/sick', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: 'user-1',
+              date: document.getElementById('leave-date').value,
+              days: document.getElementById('leave-days').value,
+              notes: document.getElementById('leave-notes').value
+            })
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Unable to submit request.');
+          }
+
+          const user = result.data.user;
+          totalLeaveEl.textContent = user.totalSickLeave || 0;
+          usedLeaveEl.textContent = user.usedSickLeave || 0;
+          availableLeaveEl.textContent = user.availableSickLeave || 0;
+
+          historyEl.innerHTML = (result.data.history || []).map((entry) => `
+            <article class="card">
+              <strong>${entry.date}</strong>
+              <p>${entry.days} day${entry.days > 1 ? 's' : ''} off</p>
+              <p>${entry.notes || 'No note provided.'}</p>
+            </article>
+          `).join('');
+
+          form.reset();
+          statusEl.textContent = 'Sick leave request submitted successfully.';
+        } catch (error) {
+          statusEl.textContent = error.message;
+        }
+      });
+
+      loadLeaveDashboard();
+    </script>
+  </body>
+</html>
