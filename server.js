@@ -142,7 +142,7 @@ const server = http.createServer(async (req, res) => {
       } else {
         sendJson(res, 401, {
           success: false,
-          message: 'Invalid email or password. Try admin@skstudio.com / sk12345.'
+          message: 'Invalid email or password. Try s.Admin@gmail.com / sk12345.'
         });
       }
     } catch (error) {
