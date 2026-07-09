@@ -1,0 +1,9 @@
+{
+  "name": "sks-landing-page",
+  "version": "1.0.0",
+  "description": "A stylish landing page for SK's with a dynamic JavaScript background",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

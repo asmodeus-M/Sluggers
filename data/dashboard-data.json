@@ -1,0 +1,38 @@
+{
+  "active": [
+    {
+      "id": "sk-1",
+      "name": "Mia Chen",
+      "role": "Lead SK",
+      "status": "On shift"
+    },
+    {
+      "id": "sk-2",
+      "name": "Jamal Reed",
+      "role": "Floor SK",
+      "status": "Available"
+    },
+    {
+      "id": "sk-3",
+      "name": "Sofia Patel",
+      "role": "Studio SK",
+      "status": "On break"
+    }
+  ],
+  "sick": [
+    {
+      "id": "sick-1",
+      "name": "Noah Brooks",
+      "date": "2026-07-08",
+      "days": 2,
+      "notes": "Flu symptoms"
+    },
+    {
+      "id": "sick-2",
+      "name": "Ava Torres",
+      "date": "2026-07-09",
+      "days": 1,
+      "notes": "Migraine"
+    }
+  ]
+}

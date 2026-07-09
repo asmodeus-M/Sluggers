@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SK Operations Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        overflow: auto;
+        background: linear-gradient(135deg, #050816, #101a35 60%, #1e3a8a);
+        color: #f8f7ff;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        padding: 2rem;
+      }
+
+      .dashboard-shell {
+        width: min(1200px, 100%);
+        margin: 0 auto;
+        padding: 1.5rem;
+        border-radius: 28px;
+        background: rgba(8, 12, 28, 0.74);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 20px 50px rgba(2, 6, 23, 0.45);
+        backdrop-filter: blur(14px);
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 1rem;
+        margin-bottom: 1.3rem;
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        color: #7dd3fc;
+        font-size: 0.8rem;
+        margin: 0 0 0.25rem;
+      }
+
+      h1 {
+        margin: 0 0 0.35rem;
+        font-size: clamp(1.6rem, 3vw, 2.3rem);
+      }
+
+      .subtitle {
+        margin: 0;
+        color: rgba(248, 247, 255, 0.74);
+      }
+
+      .ghost-link {
+        color: #7dd3fc;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.2rem;
+      }
+
+      .stat-card,
+      .panel {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 1rem;
+      }
+
+      .stat-label {
+        display: block;
+        color: rgba(248, 247, 255, 0.74);
+        font-size: 0.92rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-card strong {
+        font-size: 1.5rem;
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: 1.02fr 1fr;
+        gap: 1rem;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.8rem;
+      }
+
+      .panel h2 {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+
+      .pill {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.6rem;
+        border-radius: 999px;
+        background: rgba(125, 211, 252, 0.16);
+        color: #7dd3fc;
+      }
+
+      .card-list {
+        display: grid;
+        gap: 0.7rem;
+      }
+
+      .card {
+        padding: 0.8rem 0.9rem;
+        border-radius: 14px;
+        background: rgba(4, 8, 24, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .card h3 {
+        margin: 0 0 0.2rem;
+        font-size: 0.98rem;
+      }
+
+      .card p {
+        margin: 0.2rem 0;
+        color: rgba(248, 247, 255, 0.78);
+        font-size: 0.92rem;
+      }
+
+      .card-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.6rem;
+      }
+
+      .mini-btn {
+        border: none;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        color: white;
+      }
+
+      .mini-btn.primary {
+        background: linear-gradient(90deg, #8b5cf6, #22d3ee);
+      }
+
+      .mini-btn.danger {
+        background: #ef4444;
+      }
+
+      .sick-form {
+        display: grid;
+        gap: 0.7rem;
+        margin-bottom: 0.8rem;
+      }
+
+      .sick-form input,
+      .sick-form textarea {
+        width: 100%;
+        padding: 0.75rem 0.8rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.07);
+        color: #f8f7ff;
+      }
+
+      .sick-form button {
+        border: none;
+        padding: 0.8rem 1rem;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #8b5cf6, #22d3ee);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .status-message {
+        min-height: 1.2rem;
+        margin-top: 0.5rem;
+        color: #7dd3fc;
+        font-size: 0.92rem;
+      }
+
+      @media (max-width: 860px) {
+        .content-grid,
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">SK Operations</p>
+          <h1>Staff dashboard</h1>
+          <p class="subtitle">Track active SKs and manage sick leave in one place.</p>
+        </div>
+        <a class="ghost-link" href="/">← Back home</a>
+      </header>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <span class="stat-label">Active SKs</span>
+          <strong id="active-count">0</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">On Sick Leave</span>
+          <strong id="sick-count">0</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Logged Today</span>
+          <strong id="today-count">0</strong>
+        </article>
+      </section>
+
+      <div class="content-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Active SKs</h2>
+            <span class="pill">Live roster</span>
+          </div>
+          <div id="active-list" class="card-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Sick Leave</h2>
+            <span class="pill">Report & review</span>
+          </div>
+          <form id="sick-form" class="sick-form">
+            <input id="entry-id" name="entryId" type="hidden" />
+            <input id="name" name="name" placeholder="SK name" required />
+            <input id="date" name="date" type="date" required />
+            <input id="days" name="days" type="number" min="1" max="21" placeholder="Days off" required />
+            <textarea id="notes" name="notes" rows="3" placeholder="Short note"></textarea>
+            <button id="submit-btn" type="submit">Log sick leave</button>
+          </form>
+          <button id="cancel-edit" class="mini-btn danger" type="button" hidden>Cancel edit</button>
+          <p id="status-message" class="status-message"></p>
+          <div id="sick-list" class="card-list"></div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const activeList = document.getElementById('active-list');
+      const sickList = document.getElementById('sick-list');
+      const activeCount = document.getElementById('active-count');
+      const sickCount = document.getElementById('sick-count');
+      const todayCount = document.getElementById('today-count');
+      const sickForm = document.getElementById('sick-form');
+      const submitBtn = document.getElementById('submit-btn');
+      const cancelEditBtn = document.getElementById('cancel-edit');
+      const statusMessage = document.getElementById('status-message');
+      const entryIdInput = document.getElementById('entry-id');
+      const nameInput = document.getElementById('name');
+      const dateInput = document.getElementById('date');
+      const daysInput = document.getElementById('days');
+      const notesInput = document.getElementById('notes');
+
+      let state = { active: [], sick: [] };
+      let editingId = null;
+
+      function formatToday() {
+        return new Date().toISOString().slice(0, 10);
+      }
+
+      function setStatus(message, type = 'info') {
+        statusMessage.textContent = message;
+        statusMessage.style.color = type === 'error' ? '#fda4af' : '#7dd3fc';
+      }
+
+      async function loadData() {
+        const response = await fetch('/api/dashboard');
+        const data = await response.json();
+        state = data;
+        render();
+      }
+
+      function resetForm() {
+        sickForm.reset();
+        entryIdInput.value = '';
+        editingId = null;
+        submitBtn.textContent = 'Log sick leave';
+        cancelEditBtn.hidden = true;
+      }
+
+      function render() {
+        activeCount.textContent = state.active.length;
+        sickCount.textContent = state.sick.length;
+        todayCount.textContent = state.sick.filter((entry) => entry.date === formatToday()).length;
+
+        activeList.innerHTML = state.active.length
+          ? state.active.map((person) => `
+              <article class="card">
+                <h3>${person.name}</h3>
+                <p>${person.role}</p>
+                <p>Status: ${person.status}</p>
+                <div class="card-actions">
+                  <button class="mini-btn primary" data-action="toggle-status" data-id="${person.id}" type="button">Toggle status</button>
+                </div>
+              </article>
+            `).join('')
+          : '<p>No active SKs to display.</p>';
+
+        sickList.innerHTML = state.sick.length
+          ? state.sick.map((entry) => `
+              <article class="card">
+                <h3>${entry.name}</h3>
+                <p>${entry.days} day${entry.days > 1 ? 's' : ''} off</p>
+                <p>${entry.date}</p>
+                <p>${entry.notes || 'No note provided.'}</p>
+                <div class="card-actions">
+                  <button class="mini-btn primary" data-action="edit-entry" data-id="${entry.id}" type="button">Edit</button>
+                  <button class="mini-btn danger" data-action="delete-entry" data-id="${entry.id}" type="button">Delete</button>
+                </div>
+              </article>
+            `).join('')
+          : '<p>No sick leave entries yet.</p>';
+      }
+
+      activeList.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-action="toggle-status"]');
+        if (!button) return;
+
+        const id = button.getAttribute('data-id');
+        const response = await fetch(`/api/active/${id}`, { method: 'POST' });
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          state = data.data;
+          render();
+          setStatus('SK status updated.');
+        } else {
+          setStatus(data.message || 'Unable to update status.', 'error');
+        }
+      });
+
+      sickList.addEventListener('click', async (event) => {
+        const button = event.target.closest('button');
+        if (!button) return;
+
+        const id = button.getAttribute('data-id');
+        const action = button.getAttribute('data-action');
+
+        if (action === 'delete-entry') {
+          const response = await fetch(`/api/sick/${id}`, { method: 'DELETE' });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            state = data.data;
+            render();
+            setStatus('Sick leave entry removed.');
+          } else {
+            setStatus(data.message || 'Unable to delete entry.', 'error');
+          }
+          return;
+        }
+
+        if (action === 'edit-entry') {
+          const entry = state.sick.find((item) => item.id === id);
+          if (!entry) return;
+
+          editingId = entry.id;
+          entryIdInput.value = entry.id;
+          nameInput.value = entry.name;
+          dateInput.value = entry.date;
+          daysInput.value = entry.days;
+          notesInput.value = entry.notes || '';
+          submitBtn.textContent = 'Update sick leave';
+          cancelEditBtn.hidden = false;
+          setStatus('Editing sick leave entry.');
+        }
+      });
+
+      sickForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const payload = {
+          name: nameInput.value.trim(),
+          date: dateInput.value,
+          days: Number(daysInput.value),
+          notes: notesInput.value.trim()
+        };
+
+        if (!payload.name || !payload.date) {
+          setStatus('Please provide a name and date.', 'error');
+          return;
+        }
+
+        let response;
+        let data;
+
+        if (editingId) {
+          response = await fetch(`/api/sick/${editingId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          data = await response.json();
+          if (response.ok && data.success) {
+            state = data.data;
+            setStatus('Sick leave entry updated.');
+          } else {
+            setStatus(data.message || 'Update failed.', 'error');
+            return;
+          }
+        } else {
+          response = await fetch('/api/sick', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          data = await response.json();
+          if (response.ok && data.success) {
+            state = data.data;
+            setStatus('Sick leave entry logged.');
+          } else {
+            setStatus(data.message || 'Unable to save entry.', 'error');
+            return;
+          }
+        }
+
+        resetForm();
+        render();
+      });
+
+      cancelEditBtn.addEventListener('click', () => {
+        resetForm();
+        setStatus('Edit cancelled.');
+      });
+
+      loadData();
+    </script>
+  </body>
+</html>
